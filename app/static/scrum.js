@@ -64,7 +64,7 @@
     const opt = (id, vals, want, all) => {
       const list = [...new Set(vals.filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
       if (want && !list.includes(want)) list.unshift(want);
-      $(id).innerHTML = `<option value="">${all}</option>` + list.map((v) => `<option ${v === want ? "selected" : ""}>${esc(v)}</option>`).join("");
+      $(id).innerHTML = `<option value="">${all}</option>` + list.map((v) => `<option value="${esc(v)}" ${v === want ? "selected" : ""}>${esc(v)}</option>`).join("");
       $(id).classList.toggle("set", !!want);
     };
     opt("f-ch", d.facts.filter((f) => f[2] !== "scrum").map((f) => f[3]), state.f.ch, "Tous");

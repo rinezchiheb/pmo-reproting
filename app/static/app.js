@@ -155,7 +155,7 @@
       const vals = [...new Set(state.rows.filter((r) => matches(r, f, k)).map((r) => r[k]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
       if (k === "assignee") return window.Pilotage.fillPeople(sel, vals, want, labels[k]);  // liste commune du pilotage
       if (want && !vals.includes(want)) vals.unshift(want);
-      sel.innerHTML = `<option value="">${labels[k]}</option>` + vals.map((v) => `<option ${v === want ? "selected" : ""}>${esc(v)}</option>`).join("");
+      sel.innerHTML = `<option value="">${labels[k]}</option>` + vals.map((v) => `<option value="${esc(v)}" ${v === want ? "selected" : ""}>${esc(v)}</option>`).join("");
     });
   }
 

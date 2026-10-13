@@ -72,9 +72,10 @@ class Settings:
         self.types_ano = {x.lower() for x in it.get("ano", [])}
         self.raf_dev_types = {x.lower() for x in raw.get("raf_dev_types", [])}
         self.raf_qa_types = {x.lower() for x in raw.get("raf_qa_types", [])}
-        self.chantiers: list[dict[str, str]] = raw.get("chantiers", [])
+        # Noms de chantier sans espaces de début ou de fin : un espace saisi par mégarde casserait les filtres
+        self.chantiers: list[dict[str, str]] = [{**c, "name": str(c.get("name") or "").strip()} for c in (raw.get("chantiers") or [])]
         # FEAT par défaut d'un chantier (clé Jira), pour les tâches et bugs rattachés à aucune FEAT dans Jira
-        self.feat_par_chantier: dict[str, str] = {str(k): str(v) for k, v in (raw.get("feat_par_chantier", {}) or {}).items()}
+        self.feat_par_chantier: dict[str, str] = {str(k).strip(): str(v).strip() for k, v in (raw.get("feat_par_chantier", {}) or {}).items()}
 
         t = raw.get("tempo", {}) or {}
         self.tempo_enabled: bool = bool(t.get("enabled", False))
@@ -104,7 +105,7 @@ class Settings:
             for c in (t.get("conges") or []) if (c or {}).get("p") and (c or {}).get("debut")
         ]
         self.tempo_affectations: dict[str, dict[str, float]] = {
-            str(k): {str(c): float(v) for c, v in (d or {}).items()} for k, d in (t.get("affectations", {}) or {}).items()
+            str(k): {str(c).strip(): float(v) for c, v in (d or {}).items()} for k, d in (t.get("affectations", {}) or {}).items()
         }
 
 

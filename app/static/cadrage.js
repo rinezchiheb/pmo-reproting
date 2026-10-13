@@ -28,7 +28,7 @@
   function fillChantiers() {
     const list = [...state.data.chantiers];
     if (state.ch && !list.includes(state.ch)) list.unshift(state.ch);
-    $("f-ch").innerHTML = `<option value="">Tous</option>` + list.map((c) => `<option ${c === state.ch ? "selected" : ""}>${esc(c)}</option>`).join("");
+    $("f-ch").innerHTML = `<option value="">Tous</option>` + list.map((c) => `<option value="${esc(c)}" ${c === state.ch ? "selected" : ""}>${esc(c)}</option>`).join("");
     $("f-ch").classList.toggle("set", !!state.ch);
   }
 

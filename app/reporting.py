@@ -39,8 +39,11 @@ RAF_FINI_LABEL = "RAF à solder dans Jira"
 
 def solde_finies(rows: list[dict]) -> list[dict]:
     """Une tâche finie n'a plus de reste à faire : son RAF Jira passe dans raf_residuel (alerte « à solder »)
-    et ne compte dans aucun total. Appliqué aussi aux relevés enregistrés avant cette règle (13/10/2026)."""
+    et ne compte dans aucun total. Appliqué aussi aux relevés enregistrés avant cette règle (13/10/2026).
+    Retire aussi les espaces de début et de fin du nom de chantier."""
     for r in rows:
+        if isinstance(r.get("chantier"), str):
+            r["chantier"] = r["chantier"].strip()  # relevés pris avant le nettoyage des noms de chantier (13/10/2026)
         if r.get("done") and "raf_residuel" not in r:
             r["raf_residuel"] = r.get("raf_hj") or 0.0
             r["raf_hj"] = r["raf_dev"] = r["raf_qa"] = 0.0
