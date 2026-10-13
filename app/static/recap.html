@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>be-ivs · Synthèse sprint</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 22'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238DD8F0'/%3E%3Cstop offset='1' stop-color='%2338BDF8'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236EE7A0'/%3E%3Cstop offset='1' stop-color='%2316A34A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='22' height='22' rx='5' fill='url(%23b)'/%3E%3Crect x='12' width='22' height='22' rx='5' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="recap-page">
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="topbar">
+    <a class="brand" href="/recap" aria-label="be-ivs by heka · PMO Reporting">
+      <span class="logo-mark" aria-hidden="true"><i class="d1"></i><i class="d2"></i></span>
+      <span class="logo-text"><b>be-ivs</b><small>by heka</small></span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-name">PMO Reporting</span>
+    </a>
+    <nav class="tabs" aria-label="Vues">
+      <a class="tab active" href="/recap" aria-current="page"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg><span class="tab-l">Synthèse</span><span class="tab-s">Synthèse</span></a>
+      <a class="tab" href="/" data-pilotage title="Tâches, capacité, temps passé et effort"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="tab-l">Pilotage</span><span class="tab-s">Pilotage</span></a>
+      <a class="tab" href="/parametres"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="tab-l">Paramètres</span><span class="tab-s">Paramètres</span></a>
+    </nav>
+    <div class="sync">
+      <span id="source" class="badge"></span>
+      <span id="lastSync" class="muted" role="status"></span>
+      <a class="btn small" href="/cadrage" title="Cadrage du sprint : macro-chiffrage, charge de test, charge vs capacité par ressource, et son rapport PowerPoint">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6v3H9z"/><path d="M15 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>Cadrage du sprint
+      </a>
+      <a id="dnf" class="btn small" href="/api/daily-new-feat.pptx" download title="Rapport Daily New FEAT (PowerPoint) du jour affiché : synthèse CAPA / RAF par chantier, détail des US et tâches, bogues et TNR">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Daily New FEAT
+      </a>
+      <a id="report" class="btn small primary" href="/rapport" title="Rapport de synthèse de tous les chantiers, à imprimer ou enregistrer en PDF">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>Rapport de synthèse
+      </a>
+    </div>
+  </header>
+
+  <main id="main" class="recap">
+    <div id="stale" class="stale" role="status" hidden></div>
+    <section class="card rc-hero" id="hero" aria-label="État du sprint"></section>
+
+    <div class="rc-scope">
+      <span class="lbl" id="scopeLbl">Chantier</span>
+      <div class="seg" id="chSeg" role="group" aria-labelledby="scopeLbl"></div>
+    </div>
+
+    <section class="panel" aria-labelledby="attTitle">
+      <div class="panel-head"><h2 id="attTitle">Points d'attention<small id="attSub">Ce qui demande une décision ou un suivi</small></h2></div>
+      <ol class="rc-att" id="attention"></ol>
+    </section>
+
+    <section class="panel" aria-labelledby="effTitle">
+      <div class="panel-head"><h2 id="effTitle">Planifié vs consommé<small id="effSub">Estimation initiale face au consommé + reste à faire</small></h2><div class="panel-tools"><a class="btn quiet small" id="effLink" href="/effort">Voir le détail</a></div></div>
+      <div class="table-wrap ef-sum-wrap"><table class="grid compact ef-sum" id="effSum"></table></div>
+    </section>
+
+    <div class="rc-sides">
+      <section class="panel rc-side" aria-labelledby="devTitle">
+        <div class="panel-head"><h2 id="devTitle">Développement<small id="devSub"></small></h2><div class="rc-sidestate" id="devState"></div></div>
+        <div class="rc-tiles" id="devKpis"></div>
+        <div class="rc-chart" id="devBurn"></div>
+      </section>
+      <section class="panel rc-side" aria-labelledby="qaTitle">
+        <div class="panel-head"><h2 id="qaTitle">Recette<small id="qaSub"></small></h2><div class="rc-sidestate" id="qaState"></div></div>
+        <div class="rc-tiles" id="qaKpis"></div>
+        <div class="rc-chart" id="qaBurn"></div>
+      </section>
+    </div>
+    <p class="rc-note muted" id="burnNote"></p>
+
+
+    <div class="rc-grid even">
+      <section class="panel" aria-labelledby="pplTitle">
+        <div class="panel-head"><h2 id="pplTitle">Charge par personne<small>Reste à faire face à la capacité restante, jusqu'au jalon de chacun</small></h2></div>
+        <div class="rc-chart" id="pplChart"></div>
+      </section>
+      <section class="panel" aria-labelledby="stTitle">
+        <div class="panel-head"><h2 id="stTitle">État des tâches<small>Nombre de tâches par état</small></h2></div>
+        <div class="rc-chart" id="stChart"></div>
+      </section>
+    </div>
+
+    <section class="panel" aria-labelledby="tmTitle">
+      <div class="panel-head"><h2 id="tmTitle">Où va le temps de l'équipe<small>Temps saisi dans Tempo depuis le début du sprint, par profil</small></h2></div>
+      <div class="rc-chart" id="tmChart"></div>
+    </section>
+
+    <p class="rc-foot muted" id="foot"></p>
+  </main>
+
+  <div id="loading" class="loading">
+    <div class="loading-card" id="loadingCard"><div class="spinner" aria-hidden="true"></div><span>Préparation de la synthèse…</span></div>
+  </div>
+  <script src="/static/asof.js"></script>
+  <script src="/static/pilotage.js"></script>
+  <script src="/static/kpi.js"></script>
+  <script src="/static/recap.js"></script>
+</body>
+</html>

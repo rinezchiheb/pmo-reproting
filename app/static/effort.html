@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>be-ivs · Planifié vs consommé</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 22'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238DD8F0'/%3E%3Cstop offset='1' stop-color='%2338BDF8'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236EE7A0'/%3E%3Cstop offset='1' stop-color='%2316A34A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='22' height='22' rx='5' fill='url(%23b)'/%3E%3Crect x='12' width='22' height='22' rx='5' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="be-ivs by heka · PMO Reporting">
+      <span class="logo-mark" aria-hidden="true"><i class="d1"></i><i class="d2"></i></span>
+      <span class="logo-text"><b>be-ivs</b><small>by heka</small></span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-name">PMO Reporting</span>
+    </a>
+    <nav class="tabs" aria-label="Vues">
+      <a class="tab" href="/recap"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg><span class="tab-l">Synthèse</span><span class="tab-s">Synthèse</span></a>
+      <a class="tab active" href="/" data-pilotage title="Tâches, capacité, temps passé et effort" aria-current="page"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="tab-l">Pilotage</span><span class="tab-s">Pilotage</span></a>
+      <a class="tab" href="/parametres"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="tab-l">Paramètres</span><span class="tab-s">Paramètres</span></a>
+    </nav>
+    <div class="sync">
+      <span id="source" class="badge"></span>
+      <span id="lastSync" class="muted" role="status"></span>
+      <button id="refresh" class="btn small" type="button" title="Relire Jira maintenant">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Actualiser
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="stale" class="stale" role="alert" hidden></div>
+    <section class="card shared-f" aria-label="Filtres">
+      <label class="field"><span>Chantier</span><select id="f-ch"></select></label>
+      <label class="field"><span>Personne</span><select id="f-who"></select></label>
+      <label class="field"><span>Côté</span><select id="f-prof"><option value="">DEV et QA</option><option value="dev">DEV</option><option value="qa">QA</option></select></label>
+      <p class="muted shared-note">Filtres communs avec Tâches, Capacité et Temps. Personne = tâches qui lui sont assignées.</p>
+    </section>
+
+    <section class="card capa-head ef-head" aria-label="Planifié vs consommé">
+      <div class="sp-id">
+        <h1 class="sp-name">Planifié vs consommé</h1>
+        <span class="sp-dates" id="efSub"></span>
+      </div>
+      <p class="capa-rule muted"><b>Estimé</b> = estimation initiale Jira · <b>Consommé</b> = temps passé · <b>À terminaison</b> = consommé + reste à faire · <b>Écart</b> = à terminaison − estimé. Conforme jusqu'à +5 %, dérive jusqu'à +20 %, forte dérive au-delà.</p>
+      <div class="table-wrap ef-sum-wrap"><table class="grid compact ef-sum" id="efSum"></table></div>
+    </section>
+
+    <section class="panel" id="efCurvePanel">
+      <div class="panel-head">
+        <h2>Évolution de l'effort<small>Jour par jour, d'après les relevés : estimé, consommé cumulé et prévu à terminaison</small></h2>
+      </div>
+      <div class="ef-curves" id="efCurves"></div>
+    </section>
+
+    <section class="panel" id="efTreePanel">
+      <div class="panel-head">
+        <h2>Détail<small>Par chantier et côté, puis FEAT, US et tâche ; trié par écart</small></h2>
+        <div class="panel-tools">
+          <button type="button" class="btn quiet small" id="efOpenAll">Tout déplier</button>
+          <button type="button" class="btn quiet small" id="efCloseAll">Tout replier</button>
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="table-wrap"><table class="grid ef-tree" id="efTree"></table></div>
+      <p class="raf-note muted" id="efNote"></p>
+    </section>
+
+    <section class="panel" id="efTopPanel">
+      <div class="panel-head"><h2>Plus fortes dérives<small>Tâches dont le prévu à terminaison dépasse le plus l'estimation</small></h2></div>
+      <div class="table-wrap"><table class="grid compact" id="efTop"></table></div>
+    </section>
+  </main>
+
+  <div id="focusBackdrop" class="focus-backdrop" hidden></div>
+  <div id="loading" class="loading">
+    <div class="loading-card" id="loadingCard"><div class="spinner" aria-hidden="true"></div><span>Chargement des tâches…</span></div>
+  </div>
+  <script src="/static/asof.js"></script>
+  <script src="/static/pilotage.js"></script>
+  <script src="/static/focus.js"></script>
+  <script src="/static/kpi.js"></script>
+  <script src="/static/effort.js"></script>
+</body>
+</html>

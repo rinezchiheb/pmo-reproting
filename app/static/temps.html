@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>be-ivs · Temps passé</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 22'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238DD8F0'/%3E%3Cstop offset='1' stop-color='%2338BDF8'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236EE7A0'/%3E%3Cstop offset='1' stop-color='%2316A34A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='22' height='22' rx='5' fill='url(%23b)'/%3E%3Crect x='12' width='22' height='22' rx='5' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="be-ivs by heka · PMO Reporting">
+      <span class="logo-mark" aria-hidden="true"><i class="d1"></i><i class="d2"></i></span>
+      <span class="logo-text"><b>be-ivs</b><small>by heka</small></span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-name">PMO Reporting</span>
+    </a>
+    <nav class="tabs" aria-label="Vues">
+      <a class="tab" href="/recap"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg><span class="tab-l">Synthèse</span><span class="tab-s">Synthèse</span></a>
+      <a class="tab active" href="/" data-pilotage title="Tâches, capacité, temps passé et effort" aria-current="page"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="tab-l">Pilotage</span><span class="tab-s">Pilotage</span></a>
+      <a class="tab" href="/parametres"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="tab-l">Paramètres</span><span class="tab-s">Paramètres</span></a>
+    </nav>
+    <div class="sync">
+      <span id="source" class="badge"></span>
+      <span id="lastSync" class="muted" role="status"></span>
+      <button id="refresh" class="btn small" type="button" title="Relire Tempo maintenant">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Actualiser
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="stale" class="stale" role="alert" hidden></div>
+    <section class="card shared-f" aria-label="Filtres">
+      <label class="field"><span>Chantier</span><select id="f-ch"></select></label>
+      <label class="field"><span>Personne</span><select id="f-who"></select></label>
+      <p class="muted shared-note" id="sharedNote">Chantier et personne filtrent la répartition par personne et les tâches ; les indicateurs du haut restent ceux de toute l'équipe.</p>
+    </section>
+
+    <section class="card capa-head" aria-label="Synthèse du temps passé">
+      <div class="sp-id">
+        <h1 class="sp-name">Temps passé</h1>
+        <span class="sp-dates" id="tpSub"></span>
+      </div>
+      <ul class="cat-legend" id="tpRule"></ul>
+      <div class="kpis" id="tpKpis" aria-label="Indicateurs"></div>
+    </section>
+
+    <section class="panel" id="rolePanel">
+      <div class="panel-head">
+        <h2>Scrum events par rôle<small>Part du temps travaillé (absences exclues), mesurée dans Tempo et comparée au paramètre de capacité</small></h2>
+      </div>
+      <table class="grid compact role-table" id="roleTable"></table>
+    </section>
+
+    <section class="panel" id="peoplePanel">
+      <div class="panel-head">
+        <h2>Répartition par personne<small>Temps saisi en JH depuis le début du sprint, jour en cours compris</small></h2>
+        <div class="panel-tools">
+          <div id="peopleFilter"></div>
+          <div class="seg" id="grpSeg" role="group" aria-label="Rôle">
+            <button type="button" data-g="" class="on" aria-pressed="true">Tous</button>
+            <button type="button" data-g="dev" aria-pressed="false">DEV</button>
+            <button type="button" data-g="qa" aria-pressed="false">QA</button>
+            <button type="button" data-g="lead" aria-pressed="false">TL / PO</button>
+          </div>
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="table-wrap load-wrap"><table class="grid tp-table" id="peopleTable"></table></div>
+    </section>
+
+    <section class="panel" id="issuesPanel">
+      <div class="panel-head">
+        <h2>Où va le temps<small>Tâches Tempo les plus saisies, par catégorie</small></h2>
+        <div class="panel-tools">
+          <div id="issuesFilter"></div>
+          <div class="seg" id="catSeg" role="group" aria-label="Catégorie">
+            <button type="button" data-c="scrum" class="on" aria-pressed="true">Scrum events</button>
+            <button type="button" data-c="absence" aria-pressed="false">Absences</button>
+            <button type="button" data-c="autres" aria-pressed="false">Autres sujets</button>
+            <button type="button" data-c="sprint" aria-pressed="false">Tâches du sprint</button>
+          </div>
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="table-wrap load-wrap"><table class="grid compact" id="issuesTable"></table></div>
+    </section>
+  </main>
+
+  <div id="focusBackdrop" class="focus-backdrop" hidden></div>
+  <div id="loading" class="loading">
+    <div class="loading-card" id="loadingCard"><div class="spinner" aria-hidden="true"></div><span>Lecture de Tempo…</span></div>
+  </div>
+  <script src="/static/asof.js"></script>
+  <script src="/static/pilotage.js"></script>
+  <script src="/static/focus.js"></script>
+  <script src="/static/listfilter.js"></script>
+  <script src="/static/temps.js"></script>
+</body>
+</html>

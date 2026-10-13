@@ -1,0 +1,11 @@
+services:
+  pmo-reporting:
+    build: .
+    container_name: pmo-reporting
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro                 # classeur démo (mode excel)
+      - ./history:/app/history              # historique quotidien (comparatif jour par jour), à conserver

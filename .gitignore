@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+history/
+
+# Non versionnés (choix utilisateur 2026-10-13)
+captures/
+data/
+.claude/
+.impeccable/
+TASKS-audit-ux.md

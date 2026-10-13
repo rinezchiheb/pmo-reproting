@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>be-ivs · Capacité</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 22'%3E%3Cdefs%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238DD8F0'/%3E%3Cstop offset='1' stop-color='%2338BDF8'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236EE7A0'/%3E%3Cstop offset='1' stop-color='%2316A34A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='22' height='22' rx='5' fill='url(%23b)'/%3E%3Crect x='12' width='22' height='22' rx='5' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="be-ivs by heka · PMO Reporting">
+      <span class="logo-mark" aria-hidden="true"><i class="d1"></i><i class="d2"></i></span>
+      <span class="logo-text"><b>be-ivs</b><small>by heka</small></span>
+      <span class="brand-sep" aria-hidden="true"></span>
+      <span class="brand-name">PMO Reporting</span>
+    </a>
+    <nav class="tabs" aria-label="Vues">
+      <a class="tab" href="/recap"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3 7 4-14 3 7h4"/></svg><span class="tab-l">Synthèse</span><span class="tab-s">Synthèse</span></a>
+      <a class="tab active" href="/" data-pilotage title="Tâches, capacité, temps passé et effort" aria-current="page"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><span class="tab-l">Pilotage</span><span class="tab-s">Pilotage</span></a>
+      <a class="tab" href="/parametres"><svg class="i tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span class="tab-l">Paramètres</span><span class="tab-s">Paramètres</span></a>
+    </nav>
+    <div class="sync">
+      <span id="source" class="badge"></span>
+      <span id="lastSync" class="muted" role="status"></span>
+      <button id="refresh" class="btn small" type="button" title="Relire Tempo et Jira maintenant">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Actualiser
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="stale" class="stale" role="alert" hidden></div>
+
+    <!-- Barre compacte : apparaît quand les filtres complets sortent de l'écran (toujours visible sur téléphone) -->
+    <div class="f-mini" id="fMini" role="region" aria-label="Filtres actifs">
+      <div class="f-mini-in">
+        <button id="fOpen" class="btn small" type="button" aria-expanded="false" aria-controls="filters">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4"/></svg>Filtres<span id="fN" class="f-n" hidden></span>
+        </button>
+        <div class="f-chips" id="fChips"></div>
+        <span id="fMiniCount" class="f-count"></span>
+      </div>
+    </div>
+
+    <div class="filters-slot" id="fSlot">
+    <section class="card filters" id="filters" aria-label="Filtres">
+      <div class="f-grid capa-f">
+        <label class="field"><span>Chantier</span><select id="f-ch"></select></label>
+        <label class="field"><span>Profil</span><select id="f-prof"></select></label>
+        <label class="field"><span>Personne</span><select id="f-who"></select></label>
+        <label class="field"><span>Charge</span><select id="f-load"></select></label>
+        <label class="field"><span>Recherche</span>
+          <span class="input-ico">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="f-q" type="search" placeholder="Nom, rôle…" aria-keyshortcuts="/">
+            <kbd title="Raccourci : touche /">/</kbd>
+          </span>
+        </label>
+      </div>
+      <div class="f-bar">
+        <label class="toggle"><input type="checkbox" id="onlyRaf" checked><span class="tg"></span>Seulement avec du RAF</label>
+        <div class="filter-actions">
+          <span id="fCount" class="f-count"></span>
+          <button id="reset" class="btn quiet" type="button">Réinitialiser</button>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <section class="card capa-head" aria-label="Synthèse de la capacité">
+      <div class="sp-id">
+        <h1 class="sp-name">Capacité</h1>
+        <span class="sp-dates" id="capaSub"></span>
+      </div>
+      <div class="capa-rule-wrap">
+        <p class="capa-rule muted" id="capaRule"></p>
+        <button type="button" class="btn small ghost" data-explain="method"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>Comment la capacité est calculée</button>
+      </div>
+      <div class="kpis" id="capaKpis" aria-label="Indicateurs"></div>
+    </section>
+
+    <section class="panel" id="chPanel">
+      <div class="panel-head">
+        <h2>Charge par chantier<small>Sur tout le sprint : capa, imputé et capa restante, DEV et QA séparés, chacune face à son RAF</small></h2>
+        <div class="panel-tools">
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="table-wrap load-wrap"><table class="grid load-table" id="chTable"></table></div>
+    </section>
+
+    <section class="panel" id="loadPanel">
+      <div class="panel-head">
+        <h2>Charge par personne<small>Sur tout le sprint · DEV jusqu'au Freeze Code face au RAF DEV · QA jusqu'à la fin de test face au RAF QA</small></h2>
+        <div class="panel-tools">
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="table-wrap load-wrap"><table class="grid load-table" id="loadTable"></table></div>
+    </section>
+
+    <section class="panel" id="affPanel">
+      <div class="panel-head">
+        <h2>Affectation prévue vs réelle<small id="affSub">Part du temps travaillé réellement imputée sur chaque chantier, face à l'affectation</small></h2>
+        <div class="panel-tools"><button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button></div>
+      </div>
+      <div class="table-wrap load-wrap"><table class="grid aff-table" id="affTable"></table></div>
+      <div class="raf-note muted" id="affNote"></div>
+    </section>
+
+    <section class="panel" id="timePanel">
+      <div class="panel-head">
+        <h2>Temps saisis dans Tempo<small id="timeSub">Temps saisi par jour en JH, depuis le début du sprint</small></h2>
+        <div class="panel-tools">
+          <label class="toggle"><input type="checkbox" id="onlyMissing"><span class="tg"></span>Seulement les manques</label>
+          <button type="button" class="btn quiet small focus-btn" data-focus aria-pressed="false" title="Agrandir ce bloc (Échap pour revenir)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Agrandir</span></button>
+        </div>
+      </div>
+      <div class="raf-wrap"><table class="grid raf-table time-table" id="timeTable"></table></div>
+      <div class="raf-note muted" id="timeNote"></div>
+    </section>
+  </main>
+
+  <div id="focusBackdrop" class="focus-backdrop" hidden></div>
+  <!-- Détail d'un calcul de capacité : ouvert en cliquant une valeur de capacité -->
+  <dialog id="explain" class="explain" aria-labelledby="exTitle">
+    <div class="ex-head">
+      <h2 id="exTitle"></h2>
+      <button type="button" class="t-close" data-close aria-label="Fermer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="ex-body" id="exBody"></div>
+  </dialog>
+  <div id="loading" class="loading">
+    <div class="loading-card" id="loadingCard"><div class="spinner" aria-hidden="true"></div><span>Lecture de Tempo…</span></div>
+  </div>
+  <script src="/static/asof.js"></script>
+  <script src="/static/pilotage.js"></script>
+  <script src="/static/focus.js"></script>
+  <script src="/static/capa.js"></script>
+</body>
+</html>
