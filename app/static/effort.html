@@ -35,7 +35,7 @@
     <section class="card shared-f" aria-label="Filtres">
       <label class="field"><span>Chantier</span><select id="f-ch"></select></label>
       <label class="field"><span>Personne</span><select id="f-who"></select></label>
-      <label class="field"><span>Côté</span><select id="f-prof"><option value="">DEV et QA</option><option value="dev">DEV</option><option value="qa">QA</option></select></label>
+      <label class="field"><span>Profil</span><select id="f-prof"><option value="">DEV et QA</option><option value="dev">DEV</option><option value="qa">QA</option></select></label>
       <p class="muted shared-note">Filtres communs avec Tâches, Capacité et Temps. Personne = tâches qui lui sont assignées.</p>
     </section>
 
@@ -44,7 +44,7 @@
         <h1 class="sp-name">Planifié vs consommé</h1>
         <span class="sp-dates" id="efSub"></span>
       </div>
-      <p class="capa-rule muted"><b>Estimé</b> = estimation initiale Jira · <b>Consommé</b> = temps passé · <b>À terminaison</b> = consommé + reste à faire · <b>Écart</b> = à terminaison − estimé. Conforme jusqu'à +5 %, dérive jusqu'à +20 %, forte dérive au-delà.</p>
+      <p class="capa-rule muted"><b>Estimé</b> = estimation initiale Jira · <b>Consommé</b> = temps passé · <b>À terminaison</b> = consommé + reste à faire · <b>Dérive</b> = à terminaison − estimé. Conforme jusqu'à +5 %, dérive jusqu'à +20 %, forte dérive au-delà.</p>
       <div class="table-wrap ef-sum-wrap"><table class="grid compact ef-sum" id="efSum"></table></div>
     </section>
 
@@ -57,7 +57,7 @@
 
     <section class="panel" id="efTreePanel">
       <div class="panel-head">
-        <h2>Détail<small>Par chantier et côté, puis FEAT, US et tâche ; trié par écart</small></h2>
+        <h2>Détail<small>Par chantier et profil, puis FEAT, US et tâche ; trié par dérive</small></h2>
         <div class="panel-tools">
           <button type="button" class="btn quiet small" id="efOpenAll">Tout déplier</button>
           <button type="button" class="btn quiet small" id="efCloseAll">Tout replier</button>
@@ -80,6 +80,7 @@
   </div>
   <script src="/static/asof.js"></script>
   <script src="/static/pilotage.js"></script>
+  <script src="/static/glossaire.js"></script>
   <script src="/static/focus.js"></script>
   <script src="/static/kpi.js"></script>
   <script src="/static/effort.js"></script>

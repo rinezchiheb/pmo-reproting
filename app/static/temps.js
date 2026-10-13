@@ -64,7 +64,7 @@
       kpi(`<span class="sw cat-autres"></span>Autres sujets`, `${hj(tot.autres)}<small>JH</small>`, `${num(pct(tot.autres, worked), 0)} % du temps travaillé`);
 
     // Scrum par rôle : mesuré vs paramétré
-    $("roleTable").innerHTML = `<thead><tr><th>Rôle</th><th class="num">Personnes</th><th class="num">Temps travaillé</th><th class="num">Scrum events</th><th class="num">Part mesurée</th><th class="num">Paramètre capacité</th><th class="num">Écart</th><th>État</th></tr></thead><tbody>` +
+    $("roleTable").innerHTML = `<thead><tr><th>Rôle</th><th class="num">Personnes</th><th class="num">Temps travaillé</th><th class="num">Scrum events</th><th class="num">Part mesurée</th><th class="num">Paramètre capacité</th><th class="num">vs paramètre</th><th>État</th></tr></thead><tbody>` +
       ["lead", "team"].map((g) => {
         const ps = team.filter((p) => p.group === g);
         const w = ps.reduce((a, p) => a + p.time.sprint + p.time.scrum + p.time.autres, 0), sc = ps.reduce((a, p) => a + p.time.scrum, 0);

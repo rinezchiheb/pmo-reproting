@@ -11,7 +11,7 @@
   const fmtDate = (iso) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "—");
   const fmtDay = (iso) => parse(iso).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const fmtShort = (iso) => parse(iso).toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit" });
-  const jLeft = (iso, today) => { const d = Math.round((parse(iso) - parse(today)) / 86400000); return d < 0 ? `passé de ${-d} j` : d === 0 ? "ce jour" : `J-${d}`; };
+  const jLeft = (iso, today) => K.dayGap(iso, today, "ce jour");
   const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
   const state = { tasks: null, tempo: null, tempoErr: null };
 
@@ -36,8 +36,8 @@
     return `${fmtDate(d.last)}${d.after ? ` <b class="neg">· ${d.after} après le jalon</b>` : ""}`;
   }
   function sentence(c) {
-    const reds = [c.dev.w.lvl === "red" && `le développement (${pctTxt(c.dev.w.pct)} de la capacité)`, c.qa.w.lvl === "red" && `la recette (${pctTxt(c.qa.w.pct)} de la capacité)`].filter(Boolean);
-    if (reds.length) return `${reds.join(" et ")} dépasse${reds.length > 1 ? "nt" : ""} la capacité disponible d'ici le jalon.`;
+    const reds = [c.dev.w.lvl === "red" && K.overTxt("le développement", c.dev, num), c.qa.w.lvl === "red" && K.overTxt("la recette", c.qa, num)].filter(Boolean);
+    if (reds.length) { const t = `${reds.join(" ; ")} d'ici le jalon.`; return t[0].toUpperCase() + t.slice(1); }
     if (c.w.lvl === "unknown") return "Capacité inconnue : Tempo n'a pas pu être lu, seuls le reste à faire et les retards sont jugés.";
     if (c.w.lvl === "amber") {
       const load = [c.dev.w.pct != null && `développement à ${pctTxt(c.dev.w.pct)}`, c.qa.w.pct != null && `recette à ${pctTxt(c.qa.w.pct)}`].filter(Boolean);
@@ -78,7 +78,7 @@
     const S = SIDE[st.side], ms = m[S.ms], g = gapOf(st);
     const row = (k, v, cls = "") => `<tr><th>${k}</th><td class="${cls}">${v}</td></tr>`;
     return `<div class="rp-side ${st.side}">
-      <h3>${S.lbl}<small>${ms ? `jusqu'au ${S.msLbl}, ${fmtShort(ms)} · ${jLeft(ms, m.today)}` : "jalon non renseigné"}</small></h3>
+      <h3>${S.lbl}<small>${ms ? `${S.until}, ${fmtShort(ms)} · ${jLeft(ms, m.today)}` : "jalon non renseigné"}</small></h3>
       <div class="rp-side-body">
         <table class="rp-kpis"><tbody>
           ${row("Météo", chip(st.w))}
@@ -87,7 +87,7 @@
           ${row("Capacité restante", st.capa == null ? "—" : `${num(st.capa)} JH`)}
           ${row("Écart", g == null ? "—" : `${gapTxt(g)} JH <small>${g < -0.005 ? "manque" : "marge"}</small>`, gapCls(g))}
           ${row("Charge / capa", pctTxt(st.w.pct))}
-          ${row("Avancement", `${pct(st.progress)} <small>${st.done} / ${st.total} tâches terminées</small>`)}
+          ${row("Avancement", `${pct(st.progress)} <small>du temps · ${st.done} / ${st.total} tâches terminées</small>`)}
           ${(() => { // planifié vs consommé : estimation initiale face au consommé + reste à faire
             const e = K.effort(state.tasks.rows.filter((r) => r.chantier === ch && K.sideOf(r, m) === st.side));
             if (!e.n) return "";
@@ -191,7 +191,7 @@
       <section class="rp-ch" id="ch-${encodeURIComponent(c.name)}">
         <header class="rp-ch-head">
           <h2>${esc(c.name)}</h2>${chip(c.w)}
-          <p>${esc(sentence(c))} <span class="rp-muted">${c.done} / ${c.total} tâches terminées · avancement ${pct(c.progress)}${c.late ? ` · ${plural(c.late, "tâche en retard ou bloquée", "tâches en retard ou bloquées")}` : ""}</span></p>
+          <p>${esc(sentence(c))} <span class="rp-muted">${c.done} / ${c.total} tâches terminées · avancement ${pct(c.progress)} du temps${c.late ? ` · ${plural(c.late, "tâche en retard ou bloquée", "tâches en retard ou bloquées")}` : ""}</span></p>
         </header>
         <div class="rp-sides">${sideBlock(c.dev, m, c.name)}${sideBlock(c.qa, m, c.name)}</div>
         ${withFeat ? featTable(c, m) : ""}

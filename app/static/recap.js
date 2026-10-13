@@ -13,7 +13,7 @@
   const fmtDay = (iso) => parse(iso).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
   const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
   const daysTo = (iso, today) => Math.round((parse(iso) - parse(today)) / 86400000);
-  const jLabel = (iso, today) => { const d = daysTo(iso, today); return d < 0 ? `passé de ${-d} j` : d === 0 ? (window.ASOF?.day ? "ce jour" : "aujourd'hui") : `J-${d}`; };
+  const jLabel = (iso, today) => window.KPI.dayGap(iso, today, window.ASOF?.day ? "ce jour" : "aujourd'hui");
   const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
 
   // Météo, indicateurs DEV / QA et burndown : calculs partagés avec le rapport (kpi.js)
@@ -66,8 +66,8 @@
     const s0 = m.sprint_start, s1 = m.fin_test;
     const elapsed = s0 && s1 ? Math.max(0, Math.min(100, (100 * (parse(today) - parse(s0))) / (parse(s1) - parse(s0)))) : 0;
     const sentence = (c) => {
-      const reds = [c.dev.w.lvl === "red" && `le développement (${pctTxt(c.dev.w.pct)})`, c.qa.w.lvl === "red" && `la recette (${pctTxt(c.qa.w.pct)})`].filter(Boolean);
-      if (reds.length) return `${reds.join(" et ")} dépasse${reds.length > 1 ? "nt" : ""} la capacité disponible.`;
+      const reds = [c.dev.w.lvl === "red" && window.KPI.overTxt("le développement", c.dev, num), c.qa.w.lvl === "red" && window.KPI.overTxt("la recette", c.qa, num)].filter(Boolean);
+      if (reds.length) return `${reds.join(" ; ")}.`;
       if (c.w.lvl === "unknown") return "capacité inconnue : Tempo n'a pas pu être lu.";
       if (c.w.lvl === "amber") return `sous surveillance : ${[plural(c.late, "tâche en retard", "tâches en retard"),
         c.dev.w.pct != null && `développement ${pctTxt(c.dev.w.pct)}`, c.qa.w.pct != null && `recette ${pctTxt(c.qa.w.pct)}`].filter(Boolean).join(", ")}.`;
@@ -96,14 +96,14 @@
     // ---- indicateurs DEV et QA
     for (const st of [dev, qa]) {
       const S = SIDE[st.side], ms = m[S.ms];
-      $(`${st.side}Sub`).textContent = `${ch}${ms ? ` · jusqu'au ${S.msLbl}, ${fmtDay(ms)} · ${jLabel(ms, today)}` : ""}`;
+      $(`${st.side}Sub`).textContent = `${ch}${ms ? ` · ${S.until}, ${fmtDay(ms)} · ${jLabel(ms, today)}` : ""}`;
       const tile = (lbl, val, sub, cls = "") => `<div class="rc-tile ${cls}"><span class="lbl">${lbl}</span><div class="val">${val}</div><div class="sub">${sub}</div></div>`;
       $(`${st.side}Kpis`).innerHTML =
         // Écart = capacité restante − reste à faire : positif = marge, négatif = ce qui manque pour tenir le jalon
         (st.capa == null ? tile("Écart", "—", "capacité indisponible") : (() => {
           const gap = st.capa - st.raf;
           return tile("Écart", `${gap > 0.005 ? "+" : gap < -0.005 ? "−" : ""}${num(Math.abs(gap))}<small>JH</small>`,
-            `${gap < -0.005 ? `il manque ${num(-gap)} JH` : `marge de ${num(gap)} JH`} · ${num(st.capa)} JH de capa pour ${num(st.raf)} JH à faire`, st.w.lvl);
+            `${gap < -0.005 ? `il manque ${num(-gap)} JH` : `marge de ${num(gap)} JH`} · ${num(st.capa)} JH de capacité pour ${num(st.raf)} JH à faire`, st.w.lvl);
         })()) +
         tile("Reste à faire", `${num(st.raf)}<small>JH</small>`, `${num(st.consumed)} JH déjà imputés depuis le ${fmtDate(m.sprint_start)}`) +
         tile("Capacité restante", st.capa == null ? "—" : `${num(st.capa)}<small>JH</small>`, (() => {
@@ -114,7 +114,7 @@
         tile("En retard", st.late, [st.late ? "ou bloquées" : "aucune en retard", st.after && `${st.after} après le jalon`, st.noest && `${st.noest} sans estimation`, st.unest && `${st.unest} RAF à estimer`].filter(Boolean).join(" · "), st.late || st.after ? "amber" : "green");
       // météo du côté : état, reste à faire face à la capacité, retards
       $(`${st.side}State`).innerHTML = `<span class="rc-state ${st.w.lvl}">${dot(st.w)}${st.w.word}</span>` +
-        `<span class="stack">${st.raf < 0.005 ? `plus de ${st.side === "dev" ? "développement" : "recette"} à faire` : st.capa == null ? `${num(st.raf)} JH à faire` : `${num(st.raf)} JH pour ${num(st.capa)} JH · ${pctTxt(st.w.pct)}`}</span>` +
+        `<span class="stack">${st.raf < 0.005 ? `plus de ${st.side === "dev" ? "développement" : "recette"} à faire` : st.capa == null ? `${num(st.raf)} JH à faire` : (st.w.pct === Infinity ? `${num(st.raf)} JH à faire · aucune capacité restante` : `${num(st.raf)} JH pour ${num(st.capa)} JH · ${pctTxt(st.w.pct)}`)}</span>` +
         (st.late ? `<span class="stack warn-t">${plural(st.late, "tâche en retard", "tâches en retard")}</span>` : "");
       burndown($(`${st.side}Burn`), st, m);
     }
@@ -123,8 +123,8 @@
     // ---- points d'attention
     const att = [];
     for (const c of ch ? perCh.filter((x) => x.name === ch) : perCh) {
-      if (c.qa.w.lvl === "red") att.push(["red", `<b>Recette ${esc(c.name)}</b> : ${num(c.qa.raf)} JH à faire pour ${num(c.qa.capa)} JH de capacité d'ici la fin de test (${pctTxt(c.qa.w.pct)}). Décision attendue : renfort, réduction ou décalage.`]);
-      if (c.dev.w.lvl === "red") att.push(["red", `<b>Développement ${esc(c.name)}</b> : ${num(c.dev.raf)} JH à faire pour ${num(c.dev.capa)} JH de capacité d'ici le Freeze Code (${pctTxt(c.dev.w.pct)}).`]);
+      if (c.qa.w.lvl === "red") att.push(["red", `<b>Recette ${esc(c.name)}</b> : ${num(c.qa.raf)} JH à faire pour ${num(c.qa.capa)} JH de capacité d'ici la fin de test${c.qa.w.pct === Infinity ? "" : ` (${pctTxt(c.qa.w.pct)})`}. Décision attendue : renfort, réduction ou décalage.`]);
+      if (c.dev.w.lvl === "red") att.push(["red", `<b>Développement ${esc(c.name)}</b> : ${num(c.dev.raf)} JH à faire pour ${num(c.dev.capa)} JH de capacité d'ici le Freeze Code${c.dev.w.pct === Infinity ? "" : ` (${pctTxt(c.dev.w.pct)})`}.`]);
     }
     const open = rows.filter((r) => !r.done);
     const late = open.filter((r) => has(r, "RETARD", "BLOQUEE"));
@@ -175,7 +175,7 @@
     const effRows = ["dev", "qa"].map((sd) => [sd, window.KPI.effort(rows.filter((r) => sideOf(r, m) === sd))]).filter(([, e]) => e.n);
     $("effSub").textContent = `${ch} · estimation initiale face au consommé + reste à faire`;
     $("effLink").href = `/effort?ch=${encodeURIComponent(ch)}`;
-    $("effSum").innerHTML = `<thead><tr><th>Côté</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste</th><th class="num">À terminaison</th><th class="num">Écart</th><th class="ef-opt">État</th></tr></thead><tbody>` +
+    $("effSum").innerHTML = `<thead><tr><th>Profil</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste</th><th class="num">À terminaison</th><th class="num">Dérive</th><th class="ef-opt">État</th></tr></thead><tbody>` +
       (effRows.length ? effRows.map(([sd, e]) => `<tr><td><b>${sd === "dev" ? "Développement" : "Recette"}</b>${e.noest ? `<span class="stack">${e.noest} sans estimation</span>` : ""}</td>
         <td class="num">${fx(e.est)}</td><td class="num ef-opt">${fx(e.spent)}</td><td class="num ef-opt">${fx(e.raf)}</td><td class="num"><b>${fx(e.fin)}</b></td>
         <td class="num"><span class="ef-gap ${e.lvl}">${sg(e.gap)} JH</span><span class="stack">${e.pct == null ? "non estimé" : `${e.pct > 0.5 ? "+" : e.pct < -0.5 ? "−" : ""}${Math.abs(Math.round(e.pct))} %`}</span></td>
@@ -271,7 +271,8 @@
       .filter((x) => x.raf > 0.005 || x.capa > 0.005)
       .sort((a, b) => (b.capa ? b.raf / b.capa : 9) - (a.capa ? a.raf / a.capa : 9) || b.raf - a.raf);
     if (!ps.length) { el.innerHTML = '<p class="empty">Aucune donnée de capacité.</p>'; return; }
-    const W = Math.max(320, Math.round(el.clientWidth - 32)), L = 150, R = 120, rowH = 30, H = ps.length * rowH + 30;
+    // Large : texte « x JH à faire · y JH de capacité » au bout de la barre ; étroit (téléphone) : texte sous la barre
+    const W = Math.max(320, Math.round(el.clientWidth - 32)), narrow = W < 640, L = 150, R = narrow ? 12 : 250, rowH = narrow ? 44 : 30, H = ps.length * rowH + 30;
     const vmax = Math.max(1, ...ps.flatMap((x) => [x.raf, x.capa]));
     const xs = (v) => L + ((W - L - R) * v) / vmax;
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Charge par personne">`;
@@ -280,7 +281,7 @@
       svg += `<text x="${L - 8}" y="${yy + 15}" text-anchor="end" class="nm">${esc(p.name)}<tspan class="ax"> ${p.categorie === "lead" ? "TL / PO" : p.profile === "qa" ? "QA" : "DEV"}</tspan></text>`;
       svg += `<rect x="${L}" y="${yy + 2}" width="${xs(capa) - L}" height="18" rx="3" class="capa"><title>${esc(p.name)} : capacité ${num(capa)} JH</title></rect>`;
       svg += `<rect x="${L}" y="${yy + 7}" width="${Math.max(1, xs(raf) - L)}" height="8" rx="2" class="raf ${over ? "over" : p.profile}"><title>${esc(p.name)} : reste à faire ${num(raf)} JH</title></rect>`;
-      svg += `<text x="${Math.max(xs(raf), xs(capa)) + 8}" y="${yy + 15}" class="val ${over ? "over" : ""}">${num(raf)} / ${num(capa)} JH${capa > 0.005 ? ` · ${Math.round((100 * raf) / capa)} %` : ""}</text>`;
+      svg += `<text x="${narrow ? 8 : Math.max(xs(raf), xs(capa)) + 8}" y="${narrow ? yy + 34 : yy + 15}" class="val ${over ? "over" : ""}">${num(raf)} JH à faire · ${capa > 0.005 ? `${num(capa)} JH de capacité · ${Math.round((100 * raf) / capa)} %` : "aucune capacité restante"}</text>`;
     });
     svg += `<text x="${L}" y="${H - 6}" class="ax">Barre claire : capacité restante · trait plein : reste à faire (rouge au-delà de la capacité)</text>`;
     el.innerHTML = svg + "</svg>";
@@ -297,7 +298,7 @@
   }
   function statusChart(el, rows, chantiers, m) {
     const groups = chantiers ? chantiers.map((c) => [c, rows.filter((r) => r.chantier === c)])
-      : [["Développement", rows.filter((r) => sideOf(r, m) === "dev")], ["Recette", rows.filter((r) => sideOf(r, m) === "qa")], ["Autres (anomalies…)", rows.filter((r) => !sideOf(r, m))]].filter(([, r]) => r.length);
+      : [["Développement", rows.filter((r) => sideOf(r, m) === "dev")], ["Recette", rows.filter((r) => sideOf(r, m) === "qa")], ["Bogues", rows.filter((r) => !sideOf(r, m))]].filter(([, r]) => r.length);
     const W = Math.max(320, Math.round(el.clientWidth - 32)), L = 170, R = 20, rowH = 34, H = groups.length * rowH + 12;
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="État des tâches">`;
     groups.forEach(([name, rs], i) => {

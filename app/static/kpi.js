@@ -19,9 +19,20 @@
     return { lvl, pct, word: WORD[lvl] };
   }
   const worst = (...ws) => ws.reduce((a, w) => (LV[w.lvl] > LV[a.lvl] ? w : a));
-  const pctTxt = (p) => (p == null ? "—" : p === Infinity ? "∞" : `${Math.round(p)} %`);
+  // Charge en % ; sans capacité restante : en toutes lettres (plus de symbole « ∞ »)
+  const pctTxt = (p) => (p == null ? "—" : p === Infinity ? "aucune capacité restante" : `${Math.round(p)} %`);
+  // Délai avant un jalon, en mots : « dans 3 j », « aujourd'hui », « passé de 3 j » (plus de « +3 j » ni « J-3 »)
+  const dayGap = (iso, today, todayWord = "aujourd'hui") => {
+    const d = Math.round((parse(iso) - parse(today)) / 86400000);
+    return d < 0 ? `passé de ${-d} j` : d === 0 ? todayWord : `dans ${d} j`;
+  };
+  // Un côté hors capacité, en une phrase : « la recette a 4,4 JH à faire et aucune capacité restante »
+  const overTxt = (name, st, num) => (st.w.pct === Infinity
+    ? `${name} a ${num(st.raf)} JH à faire et aucune capacité restante`
+    : `${name} (${num(st.raf)} JH à faire pour ${num(st.capa)} JH de capacité, ${Math.round(st.w.pct)} %) dépasse la capacité restante`);
   const SIDE = { dev: { lbl: "Développement", ms: "freeze_code", msLbl: "Freeze Code", alert: "APRES_FREEZE" },
     qa: { lbl: "Recette", ms: "fin_test", msLbl: "fin de test", alert: "APRES_FIN_TEST" } };
+  SIDE.dev.until = "jusqu'au Freeze Code"; SIDE.qa.until = "jusqu'à la fin de test";
 
   function sideOf(r, m) {
     const t = (r.type || "").toLowerCase();
@@ -116,5 +127,5 @@
     return { est, spent, raf, fin, gap, pct, lvl, word: EFFORT_WORD[lvl], n: rows.length, noest: noest.length, noestJh: sum(noest, (r) => r.spent_hj + (r.done ? 0 : r.raf_hj)) };
   }
 
-  window.KPI = { LV, WORD, SIDE, weather, worst, pctTxt, sideOf, has, progress, sideStats, chantiers, burnSeries, parse, addDays, sum, effort, EFFORT_WORD };
+  window.KPI = { LV, WORD, SIDE, weather, worst, pctTxt, dayGap, overTxt, sideOf, has, progress, sideStats, chantiers, burnSeries, parse, addDays, sum, effort, EFFORT_WORD };
 })();

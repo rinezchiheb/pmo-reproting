@@ -105,7 +105,7 @@
       kpi("Scrum ÷ temps travaillé", `${pctTxt(r)}`, `objectif ≤ ${num(t, 0)} % · <b>${st.word}</b> · pour info ${pctTxt(ratioReal(tot))} du dév + test`, cls[st.cls] || "") +
       kpi("Scrum events", `${num(jh(tot.scrum))}<small>JH</small>`, pDays ? `${num(tot.scrum / pDays, 2)} h par personne et par jour` : "aucune saisie") +
       kpi("Temps travaillé", `${num(jh(base(tot)))}<small>JH</small>`, `dév <b>${num(jh(tot.dev))}</b> · test <b>${num(jh(tot.qa))}</b>${tot.us > 0.05 ? ` · US ${num(jh(tot.us))}` : ""} · autres sujets <b>${num(jh(tot.autres))}</b>`) +
-      kpi("Écart au budget", `${jh(gap) >= 0.05 ? "+" : jh(gap) <= -0.05 ? "−" : ""}${num(Math.abs(jh(gap)))}<small>JH</small>`, `budget ${num(t, 0)} % = ${num(jh(budget))} JH`, jh(gap) >= 0.05 ? "danger" : "") +
+      kpi("Par rapport au budget", `${jh(gap) >= 0.05 ? "+" : jh(gap) <= -0.05 ? "−" : ""}${num(Math.abs(jh(gap)))}<small>JH</small>`, `budget ${num(t, 0)} % = ${num(jh(budget))} JH`, jh(gap) >= 0.05 ? "danger" : "") +
       kpi("5 derniers jours", pctTxt(rl), rl == null || r == null ? "pas assez de saisies" : `<span class="dl ${rl > r + 0.5 ? "bad" : rl < r - 0.5 ? "good" : "same"}">${rl > r + 0.5 ? "en hausse" : rl < r - 0.5 ? "en baisse" : "stable"}</span> face au cumul`, (status(rl).cls === "red" ? "danger" : "")) +
       kpi("Jours au-dessus de l'objectif", `${over.length}<small>/ ${days.length}</small>`, over.length ? `dernier : ${fmtDate(over[over.length - 1])}` : "aucun", over.length > days.length / 2 ? "warn" : "");
 

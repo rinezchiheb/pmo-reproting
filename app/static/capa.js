@@ -16,7 +16,7 @@
   const fmtDate = (iso) => { const [, m, d] = iso.split("-"); return `${d}/${m}`; };
   const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
   const daysTo = (iso, today) => Math.round((parse(iso) - parse(today)) / 86400000);
-  const jLabel = (iso, today) => { const d = daysTo(iso, today); return d < 0 ? `+${-d} j` : d === 0 ? "J" : `J-${d}`; };
+  const jLabel = (iso, today) => { const d = daysTo(iso, today); return d < 0 ? `passé de ${-d} j` : d === 0 ? "aujourd'hui" : `dans ${d} j`; };
 
   // Charge = RAF / capacité. Au-delà de 100 % le RAF ne tient pas dans le temps disponible.
   // Mêmes mots et mêmes seuils que la Synthèse et le rapport (kpi.js) : Maîtrisé, Sous tension, Hors capacité.
@@ -24,7 +24,7 @@
   function load(raf, capa) {
     if (capa == null) return { lvl: "none", pct: null, txt: "Hors équipe" };
     if (raf < 0.005) return { lvl: "free", pct: 0, txt: LOAD_WORD.free };
-    if (capa < 0.005) return { lvl: "danger", pct: Infinity, txt: "Aucune capacité" };
+    if (capa < 0.005) return { lvl: "danger", pct: Infinity, txt: "Aucune capacité restante" };
     const pct = (100 * raf) / capa, lvl = pct > 100 ? "danger" : pct >= 80 ? "warn" : "ok";
     return { lvl, pct, txt: LOAD_WORD[lvl] };
   }
@@ -35,7 +35,7 @@
   const loadCell = (l) => {
     if (l.pct == null) return `<td class="ld none" colspan="1"><span class="muted">${l.txt}</span></td>`;
     const w = l.pct === Infinity ? 100 : Math.min(100, l.pct);
-    const pctTxt = l.pct === Infinity ? "∞" : `${Math.round(l.pct)} %`;
+    const pctTxt = l.pct === Infinity ? "—" : `${Math.round(l.pct)} %`;  // le texte dessous dit « Aucune capacité restante »
     return `<td class="ld ${l.lvl}"><div class="ld-row"><span class="ld-bar" aria-hidden="true"><i style="width:${w.toFixed(0)}%"></i></span><b>${l.lvl === "free" ? "—" : pctTxt}</b></div><span class="ld-txt">${l.txt}</span></td>`;
   };
 
@@ -228,6 +228,7 @@
   const capaBtn = (v, key, label) => `<button type="button" class="capa-btn" data-explain="${esc(key)}" title="${esc(label)}" aria-label="${esc(label)} : ${jh(v)} JH">${jh(v)}</button>`;
   const H2J = (h) => h / state.data.meta.hours_per_day;
   const MILESTONE = { dev: "Freeze Code", qa: "fin de test" };
+  const UNTIL = { dev: "jusqu'au Freeze Code", qa: "jusqu'à la fin de test" }, TO = { dev: "au Freeze Code", qa: "à la fin de test" };
 
   // Jours du sprint : disponible, imputé, reste (base de la capacité restante, à partir d'aujourd'hui)
   function sprintRows(p) {
@@ -253,7 +254,7 @@
         ? `pas d'affectation paramétrée : 100 %, réparti entre ses chantiers au prorata de son RAF ${PROF[p.profile]} (${Object.entries(p.affectation).map(([c, v]) => `${esc(c)} ${v} %`).join(", ")})`
         : "pas d'affectation paramétrée et pas de RAF : 100 %";
     return {
-      title: `Capacité de ${esc(p.name)} · ${PROF[p.profile]} jusqu'à la ${MILESTONE[p.profile]}`,
+      title: `Capacité de ${esc(p.name)} · ${PROF[p.profile]} ${UNTIL[p.profile]}`,
       body: `<p class="ex-lead"><b>${esc(p.name)}</b> est ${PROF[p.profile]} (${p.profile_src === "role" ? `rôle Tempo « ${esc(p.role)} »` : p.profile_src === "config" ? "profil fixé dans les Paramètres" : "profil déduit de son RAF"}). ${p.join || p.leave ? `Présent sur le sprint ${p.join ? `à partir du <b>${esc(fmtDay(p.join))}</b>` : ""}${p.join && p.leave ? " et " : ""}${p.leave ? `jusqu'au <b>${esc(fmtDay(p.leave))}</b>` : ""} : en dehors, ni capacité ni saisie attendue. ` : ""}Sa capacité restante court d'aujourd'hui au <b>${esc(fmtDay(p.milestone))}</b> (${MILESTONE[p.profile]}) inclus et se compare à son RAF ${PROF[p.profile]}. Capacité du sprint entier (depuis le ${esc(fmtDay(d.period.start))}) : <b>${num(p.capa_sprint)} JH</b>, dont ${num(p.imputed)} JH déjà imputés.</p>
         <table class="ex-steps">
           ${row("Disponible d'ici le jalon", `planning Tempo × disponibilité ${p.availability} % − absences (${d.absence_issues.map(esc).join(", ")}), d'aujourd'hui au jalon, jour par jour`, `${num(p.brute_ahead)} JH`)}
@@ -265,7 +266,7 @@
         </table>
         <table class="ex-steps ex-result">
           ${row(`RAF ${PROF[p.profile]} à solder`, "", `${num(raf)} JH`)}
-          ${row("Charge", "RAF ÷ capacité restante", p.capa_real > 0.005 ? `${Math.round((100 * raf) / p.capa_real)} %` : raf > 0.005 ? "∞" : "—", "res")}
+          ${row("Charge", "RAF ÷ capacité restante", p.capa_real > 0.005 ? `${Math.round((100 * raf) / p.capa_real)} %` : raf > 0.005 ? "aucune capacité restante" : "—", "res")}
         </table>
         <h3>Jour par jour <small>sur tout le sprint, en JH ; seuls les jours à partir d'aujourd'hui comptent dans la capacité restante</small></h3>
         <div class="ex-days"><table class="grid compact"><thead><tr><th>Jour</th><th class="num">Disponible</th><th class="num">Imputé</th><th class="num">Reste</th><th class="num">Scrum à réserver</th><th class="num">Capacité</th></tr></thead><tbody>${sprintRows(p)}</tbody>
@@ -287,7 +288,7 @@
     const raf = prof === "dev" ? c.raf_dev : c.raf_qa;
     return {
       title: `Capacité ${PROF[prof]} · ${esc(c.chantier)}`,
-      body: `<p class="ex-lead">Pour chaque ${PROF[prof]} affecté au chantier, d'aujourd'hui à la ${MILESTONE[prof]} : disponible − temps déjà imputé, jour par jour ; moins la part scrum events ; multiplié par sa part sur ce chantier.</p>
+      body: `<p class="ex-lead">Pour chaque ${PROF[prof]} affecté au chantier, d'aujourd'hui ${TO[prof]} : disponible − temps déjà imputé, jour par jour ; moins la part scrum events ; multiplié par sa part sur ce chantier.</p>
         <div class="ex-days"><table class="grid compact"><thead><tr><th>Personne</th><th class="num">Disponible d'ici le jalon</th><th class="num">Déjà imputé</th><th class="num">Reste</th><th class="num">Après scrum</th><th class="num">Part</th><th class="num">Contribution</th></tr></thead>
         <tbody>${rows || `<tr><td colspan="7" class="empty">Personne n'y est affecté.</td></tr>`}</tbody>
         <tfoot><tr><td colspan="6">Capacité ${PROF[prof]} restante</td><td class="num">${num(c[`capa_real_${prof}`])} JH</td></tr>
@@ -423,7 +424,7 @@
       .filter(({ lines }) => lines.length)
       .sort((x, y) => Math.max(...y.lines.map((l) => Math.abs(l.gap))) - Math.max(...x.lines.map((l) => Math.abs(l.gap))) || x.p.name.localeCompare(y.p.name, "fr"));
     const bar = (l) => `<div class="aff-bar" aria-hidden="true"><i class="${gapLvl(l.gap)}" style="width:${Math.min(100, l.real).toFixed(0)}%"></i><b style="left:${Math.min(100, l.planned)}%" title="Prévu : ${l.planned} %"></b></div>`;
-    $("affTable").innerHTML = `<thead><tr><th>Personne</th><th>Chantier</th><th class="num">Prévue</th><th class="num">Réelle</th><th class="num">Écart</th><th class="aff-viz">Réel <span class="muted">(trait : prévu)</span></th></tr></thead><tbody>` +
+    $("affTable").innerHTML = `<thead><tr><th>Personne</th><th>Chantier</th><th class="num">Prévue</th><th class="num">Réelle</th><th class="num">Décalage</th><th class="aff-viz">Réel <span class="muted">(trait : prévu)</span></th></tr></thead><tbody>` +
       (rows.length ? rows.map(({ p, a, lines }) => lines.map((l, i) => `<tr class="${i ? "cont" : ""}">
         ${i ? "<td></td>" : `<td rowspan="${lines.length}"><b>${esc(p.name)}</b><span class="stack">${esc(p.label || PROF[p.profile])} · ${num(a.worked / hpd, 1)} JH travaillés</span><span class="stack">${Math.round(a.other)} % hors chantiers du sprint</span></td>`}
         <td>${esc(l.ch)}${a.src === "prorata" && l.planned ? '<span class="stack">prévu au prorata du RAF</span>' : ""}</td>
@@ -432,7 +433,7 @@
         <td class="num"><span class="aff-gap ${gapLvl(l.gap)}">${l.gap > 0 ? "+" : l.gap < 0 ? "−" : ""}${Math.abs(Math.round(l.gap))} pts</span></td>
         <td class="aff-viz">${bar(l)}</td></tr>`).join("")).join("")
         : `<tr><td colspan="6" class="empty">Aucune personne ne correspond aux filtres.</td></tr>`) + "</tbody>";
-    $("affNote").innerHTML = `Réelle = temps imputé sur les tâches du chantier ÷ temps travaillé (saisies Tempo hors absences et scrum events), depuis le ${fmtDate(state.data.period.start)}. Écart signalé à partir de 20 points, en rouge à partir de 50. Les tickets du chantier hors des filtres Jira comptent en « hors chantiers ».`;
+    $("affNote").innerHTML = `Réelle = temps imputé sur les tâches du chantier ÷ temps travaillé (saisies Tempo hors absences et scrum events), depuis le ${fmtDate(state.data.period.start)}. Décalage (réelle − prévue) signalé à partir de 20 points, en rouge à partir de 50. Les tickets du chantier hors des filtres Jira comptent en « hors chantiers ».`;
   }
 
   function renderTime(team, today) {

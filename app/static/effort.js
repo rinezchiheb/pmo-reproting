@@ -14,7 +14,7 @@
   const sprintName = (n) => (/sprint/i.test(n || "") ? n : `Sprint ${n || "—"}`);
   const SIDES = { dev: { lbl: "DEV", long: "Développement", ms: "freeze_code" }, qa: { lbl: "QA", long: "Recette", ms: "fin_test" } };
 
-  // filtres communs du pilotage (adresse) : chantier, personne, côté (= profil DEV / QA)
+  // filtres communs du pilotage (adresse) : chantier, personne, profil DEV / QA
   const URLP = new URLSearchParams(location.search);
   const state = {
     tasks: null, hist: null, open: new Set(), opened: false,
@@ -68,7 +68,7 @@
     // ---- synthèse par côté (jamais de total DEV + QA)
     const per = Object.fromEntries(sides.map((sd) => [sd, K.effort(rows.filter((r) => K.sideOf(r, m) === sd))]));
     const sumMax = Math.max(...sides.map((sd) => Math.max(per[sd].est, per[sd].fin)), 0);
-    $("efSum").innerHTML = `<thead><tr><th>Côté</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste à faire</th><th class="num">À terminaison</th><th class="num">Écart</th><th class="ef-viz">Consommé + reste <span class="muted">(trait : estimé)</span></th><th class="ef-opt">État</th></tr></thead><tbody>` +
+    $("efSum").innerHTML = `<thead><tr><th>Profil</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste à faire</th><th class="num">À terminaison</th><th class="num">Dérive</th><th class="ef-viz">Consommé + reste <span class="muted">(trait : estimé)</span></th><th class="ef-opt">État</th></tr></thead><tbody>` +
       sides.map((sd) => { const e = per[sd]; return `<tr><td><b>${SIDES[sd].long}</b>${e.noest ? `<span class="stack">${plural(e.noest, "tâche sans estimation", "tâches sans estimation")} · ${num(e.noestJh)} JH</span>` : ""}</td>${cells(e, sumMax)}<td class="ef-opt"><span class="ef-state ${e.lvl}">${e.word}</span></td></tr>`; }).join("") + "</tbody>";
 
     renderCurves(sides);
@@ -93,7 +93,7 @@
       const xl = pts.map((p, i) => (i % every === 0 || i === pts.length - 1 ? `<text class="ax" x="${x(i)}" y="${H - 8}" text-anchor="middle">${fmtDate(p.day)}</text>` : "")).join("");
       const last = pts[pts.length - 1], e = { gap: last.fin - last.est, pct: last.est > 0.005 ? (100 * (last.fin - last.est)) / last.est : null };
       const summary = `${SIDES[sd].long} : estimé ${num(last.est)} JH, consommé ${num(last.spent)} JH, prévu à terminaison ${num(last.fin)} JH au ${fmtDate(last.day)}`;
-      return `<figure class="ef-curve"><figcaption><b>${SIDES[sd].long}</b> <span class="muted">· écart au ${fmtDate(last.day)} : ${signed(e.gap)} JH (${pctTxt(e.pct)})</span></figcaption>
+      return `<figure class="ef-curve"><figcaption><b>${SIDES[sd].long}</b> <span class="muted">· dérive au ${fmtDate(last.day)} : ${signed(e.gap)} JH (${pctTxt(e.pct)})</span></figcaption>
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(summary)}">${ticks}${line("est", "est")}${line("spent", "spent")}${line("fin", "fin")}${xl}</svg></figure>`;
     }).join("") + `<p class="ef-legend muted"><span class="k est"></span>Estimé <span class="k fin"></span>Prévu à terminaison <span class="k spent"></span>Consommé cumulé · un estimé qui monte = tâches ajoutées en cours de sprint</p>`;
   }
@@ -129,7 +129,7 @@
         }
       }
     }
-    $("efTree").innerHTML = `<thead><tr><th>Chantier · FEAT · US · tâche</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste</th><th class="num">À terminaison</th><th class="num">Écart</th><th class="ef-viz">Consommé + reste</th></tr></thead><tbody>` +
+    $("efTree").innerHTML = `<thead><tr><th>Chantier · FEAT · US · tâche</th><th class="num">Estimé</th><th class="num ef-opt">Consommé</th><th class="num ef-opt">Reste</th><th class="num">À terminaison</th><th class="num">Dérive</th><th class="ef-viz">Consommé + reste</th></tr></thead><tbody>` +
       (html || `<tr><td colspan="7" class="empty">${state.tasks.rows.length ? "Aucune tâche DEV ou QA ne correspond aux filtres." : "Aucune tâche dans les filtres Jira du sprint."}</td></tr>`) + "</tbody>";
     // même règle que la synthèse : sans estimation initiale, avec du temps passé ou à passer
     const noest = rows.filter((r) => !(r.estim_hj > 0) && r.spent_hj + (r.done ? 0 : r.raf_hj) > 0.005);
@@ -140,7 +140,7 @@
   function renderTop(rows) {
     const m = state.tasks.meta, base = (m.jira_base_url || "").replace(/\/$/, "");
     const list = rows.map((r) => ({ r, e: K.effort([r]) })).filter((x) => x.e.gap > 0.05).sort((a, b) => b.e.gap - a.e.gap).slice(0, 8);
-    $("efTop").innerHTML = `<thead><tr><th>Tâche</th><th>Résumé</th><th>Personne</th><th class="num">Estimé</th><th class="num">À terminaison</th><th class="num">Écart</th></tr></thead><tbody>` +
+    $("efTop").innerHTML = `<thead><tr><th>Tâche</th><th>Résumé</th><th>Personne</th><th class="num">Estimé</th><th class="num">À terminaison</th><th class="num">Dérive</th></tr></thead><tbody>` +
       (list.length ? list.map(({ r, e }) => `<tr><td>${base ? `<a href="${esc(base)}/browse/${esc(r.key)}" target="_blank" rel="noopener">${esc(r.key)}</a>` : esc(r.key)}<span class="stack">${SIDES[K.sideOf(r, m)].lbl} · ${esc(r.chantier)}</span></td>
         <td>${esc(r.summary)}</td><td>${esc(r.assignee || "—")}</td><td class="num">${r.estim_hj > 0 ? num(e.est) : '<span class="muted">aucune</span>'}</td><td class="num"><b>${num(e.fin)}</b></td>${gapCell(e)}</tr>`).join("")
         : `<tr><td colspan="6" class="empty">Aucune tâche ne dépasse son estimation.</td></tr>`) + "</tbody>";

@@ -281,7 +281,7 @@
     const head = (lbl, iso) => {
       if (!iso) return "";
       const d = daysBetween(parse(m.today), parse(iso));
-      return `<th><span class="vd-j">${d < 0 ? `+${-d} j` : d === 0 ? "J" : `J-${d}`}</span>${lbl}<small>${esc(fmtDay(iso))}</small></th>`;
+      return `<th><span class="vd-j">${d < 0 ? `passé de ${-d} j` : d === 0 ? "aujourd'hui" : `dans ${d} j`}</span>${lbl}<small>${esc(fmtDay(iso))}</small></th>`;
     };
     // L'état est un bouton qui déplie son explication : lisible au clavier, au toucher et par un lecteur d'écran
     const cell = (v, raf, key, id) => {
@@ -326,10 +326,10 @@
     el.innerHTML = [
       ["RAF DEV", jh(k.raf_dev), d("raf_dev", { unit: " JH" }), "reste à faire en développement", ""],
       ["RAF QA", jh(k.raf_qa), d("raf_qa", { unit: " JH" }), "reste à faire en recette", ""],
-      ["Terminées", `${k.done}<small>/ ${k.total}</small>`, d("done", { digits: 0, lowerIsBetter: false }), `${donePct.toFixed(0)} % · ${plural(k.total - k.done, "ouverte", "ouvertes")}`, ""],
+      ["Terminées", `${k.done}<small>/ ${k.total}</small>`, d("done", { digits: 0, lowerIsBetter: false }), `${donePct.toFixed(0)} % des tâches · ${plural(k.total - k.done, "ouverte", "ouvertes")}`, ""],
       ["Alertes critiques", k.danger, d("danger", { digits: 0 }), `<b>dont ${k.late} en retard</b> · ${k.warn} à surveiller`, k.danger ? "danger" : ""],
     ].map(([l, v, dl, sub, c]) => `<div class="kpi ${c}"><span class="lbl">${l}</span><div class="val">${v}${dl}</div><div class="sub">${sub}</div></div>`).join("") +
-      (b ? `<p class="kpi-ref">Écarts calculés par rapport au relevé du ${fmtDate(state.cmpDay)}</p>` : "");
+      (b ? `<p class="kpi-ref">Variations calculées par rapport au relevé du ${fmtDate(state.cmpDay)}</p>` : "");
   }
 
   const LEVEL_ORDER = { danger: 0, warn: 1, info: 2 };
@@ -433,7 +433,7 @@
     const tot2 = (a) => (a ? a.dev + a.qa : 0);
     const dCell = (k, a) => (peRef ? `<td class="num">${delta(tot2(a) - tot2(peRef.get(k)))}</td>` : "");
     const names = new Set([...pe.keys(), ...(peRef ? peRef.keys() : [])]);
-    $("byPerson").innerHTML = `<thead><tr><th>Personne</th><th class="num">RAF DEV</th><th class="num">RAF QA</th><th class="num">Total</th>${peRef ? `<th class="num" title="Écart vs ${fmtDate(state.cmpDay)}">Écart</th>` : ""}</tr></thead><tbody>` +
+    $("byPerson").innerHTML = `<thead><tr><th>Personne</th><th class="num">RAF DEV</th><th class="num">RAF QA</th><th class="num">Total</th>${peRef ? `<th class="num" title="Variation depuis le ${fmtDate(state.cmpDay)}">Variation</th>` : ""}</tr></thead><tbody>` +
       [...names].map((k) => [k, pe.get(k) || { dev: 0, qa: 0 }])
         .filter(([k, a]) => tot2(a) > 0 || (peRef && tot2(peRef.get(k)) > 0))
         .sort((a, b) => tot2(b[1]) - tot2(a[1])).map(([k, a]) =>
@@ -544,7 +544,7 @@
     const rafTxt = (r) => (r ? fmtNum(r.raf_dev + r.raf_qa) : "–");
     const stTxt = (c) => (c.a && c.b && c.a.status !== c.b.status ? `${pill(c.b.status)} → ${pill(c.a.status)}` : pill(c.r.status));
     $("chgTable").innerHTML = list.length ? `<thead><tr><th>Clé</th><th>Résumé</th><th>Personne</th><th>État</th>
-        <th class="num">RAF avant</th><th class="num">RAF</th><th class="num">Écart RAF</th><th>Changement</th></tr></thead><tbody>` +
+        <th class="num">RAF avant</th><th class="num">RAF</th><th class="num">Variation RAF</th><th>Changement</th></tr></thead><tbody>` +
       list.map((c) => `<tr>
         <td>${jiraLink(c.r.url, c.key)}</td>
         <td>${esc(c.r.summary)}<span class="stack">${esc(c.r.chantier)}</span></td>
@@ -740,11 +740,11 @@
       if (g === "sprint") {
         html += `<tr><th class="rowh">RAF début</th>${cols.map((c) => cell(c, fmt2(c.start[k]))).join("")}</tr>`;
         html += `<tr><th class="rowh">RAF fin</th>${cols.map((c) => cell(c, `<b>${fmt2(c.end[k])}</b>`, c.today ? "Sprint en cours : valeur du jour" : "")).join("")}</tr>`;
-        html += `<tr><th class="rowh">Écart</th>${cols.map((c) => cell(c, signed(c.end[k] - c.start[k], "RAF fin − RAF début"))).join("")}</tr>`;
+        html += `<tr><th class="rowh">Variation</th>${cols.map((c) => cell(c, signed(c.end[k] - c.start[k], "RAF fin − RAF début"))).join("")}</tr>`;
         return html;
       }
       html += `<tr><th class="rowh">RAF</th>${cols.map((c) => (c.end ? cell(c, `<b>${fmt2(c.end[k])}</b>`) : missing(c))).join("")}</tr>`;
-      html += `<tr><th class="rowh">Écart</th>${cols.map((c, i) => {
+      html += `<tr><th class="rowh">Variation</th>${cols.map((c, i) => {
         if (!c.end) return missing(c);
         const b = bases[i];
         return b ? cell(c, signed(c.end[k] - b[k], `vs ${fmtDate(b.day)}`)) : cell(c, '<span class="muted">–</span>');
@@ -757,8 +757,8 @@
   function rafNote() {
     const g = state.gran, first = state.days[0]?.day;
     $("rafNote").innerHTML = {
-      jour: "RAF en fin de journée (dernier relevé du jour). Écart = variation depuis le relevé précédent.",
-      semaine: "RAF au dernier relevé de la semaine. Écart = variation depuis la semaine précédente (ou depuis le début de la semaine).",
+      jour: "RAF en fin de journée (dernier relevé du jour). Variation = depuis le relevé précédent.",
+      semaine: "RAF au dernier relevé de la semaine. Variation = depuis la semaine précédente (ou depuis le début de la semaine).",
       sprint: "Un relevé par sprint enregistré : premier et dernier jour. Le sprint en cours affiche la valeur du jour.",
     }[g] + ` <span class="dl good">−</span> le RAF baisse, <span class="dl bad">+</span> il augmente.` +
       (g !== "sprint" && first && state.meta.sprint_start && first > state.meta.sprint_start ? ` Historique disponible depuis le ${fmtDate(first)}.` : "") +

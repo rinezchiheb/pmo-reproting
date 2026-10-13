@@ -54,6 +54,8 @@ Trois onglets : **Synthèse** (vue manager), **Pilotage** et **Paramètres** (su
 
 **Pilotage** regroupe sept sous-vues : **Tâches** (`/`, ex-Reporting Tasks), **Capacité** (`/capa`, ex-Capa vs RAF), **Temps** (`/temps`, ex-Temps passé), **Effort** (`/effort`, planifié vs consommé), **Scrum events** (`/scrum`), **Anomalies** (`/anomalies`) et **Cadrage** (`/cadrage`). Toutes les sous-vues proposent la **même liste de personnes** (équipe Tempo et personnes assignées dans Jira ; celles sans donnée sur la vue sont regroupées à la fin) et le **même classement** : DEV, QA ou TL / PO (un TL / PO qui a du reste à faire est affiché « TL / PO · réalise du DEV », sa capacité reste comptée côté DEV). Le **chantier**, la **personne** et le **profil** choisis suivent d'une sous-vue à l'autre, ainsi que le jour affiché ; l'onglet Pilotage rouvre la dernière sous-vue consultée avec ses filtres. Les adresses restent valables (un lien partagé fonctionne toujours).
 
+Un **glossaire commun** (`app/static/glossaire.js`) donne la définition de chaque indicateur au survol de son libellé (souligné en pointillé), avec un seul mot par notion : **Écart** = capacité restante − reste à faire ; **Variation** = évolution depuis un relevé ; **Dérive** = effort à terminaison − estimé ; **Décalage** = affectation réelle − prévue.
+
 ## Ce que fait la page
 
 - **Bandeau sprint** : Freeze Code, fin de test, jours restants, avancement du sprint.

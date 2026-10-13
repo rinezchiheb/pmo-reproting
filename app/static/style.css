@@ -1542,3 +1542,7 @@ main:focus { outline: none; }
 .cd-paste-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 @media (max-width: 1100px) { .cd-actions { justify-self: start; } }
 @media (max-width: 700px) { .cd-actions .btn { flex: 1; } .cd-head { padding: 16px; } }
+
+/* Glossaire commun (glossaire.js) : libellé défini au survol */
+.gl { text-decoration: underline dotted; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px; cursor: help; }
+@media print { .gl { text-decoration: none; } }
